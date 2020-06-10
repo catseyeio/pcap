@@ -1,9 +1,10 @@
 language: rust
-sudo: false
+os: linux
+dist: bionic
 addons:
   apt:
     packages: [libpcap0.8, libpcap0.8-dev]
-matrix:
+jobs:
   include:
     - {os: linux, rust: stable,
        env: FLAGS="--features tokio"}
@@ -22,9 +23,11 @@ before_install:
     case $TRAVIS_OS_NAME in
       windows)
         choco install -y winpcap
+        ;;
       osx)
         brew update >/dev/null;
         brew install homebrew/dupes/libpcap;
+        ;;
     esac
 script:
   - cargo build -v $FLAGS 
