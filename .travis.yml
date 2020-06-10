@@ -11,9 +11,9 @@ jobs:
     - {os: linux, rust: beta,
        env: FLAGS="--features tokio"}
     - {os: windows, rust: stable,
-       env: FLAGS=""}
+       env: FLAGS="" PCAP_LIBDIR=./WpdPack/Lib/x64}
     - {os: windows, rust: beta,
-       env: FLAGS=""}
+       env: FLAGS="" PCAP_LIBDIR=./WpdPack/Lib/x64}
     - {os: osx, rust: stable,
        env: FLAGS="--features full" PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
     - {os: osx, rust: beta,
@@ -22,7 +22,10 @@ before_install:
 - |-
     case $TRAVIS_OS_NAME in
       windows)
-        choco install -y winpcap
+        choco install -y winpcap --version 4.1.3
+        # Developer pack 4.1.2 applies to 4.1.3 as well
+        curl -o WpdPack_4_1_2.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
+        unzip WpdPack_4_1_2.zip
         ;;
       osx)
         brew update >/dev/null;
