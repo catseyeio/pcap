@@ -22,8 +22,7 @@ before_install:
 - |-
     case $TRAVIS_OS_NAME in
       windows)
-        choco install -y winpcap --version 4.1.3
-        # Developer pack 4.1.2 applies to 4.1.3 as well
+        choco install -y winpcap
         curl -o WpdPack_4_1_2.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
         unzip WpdPack_4_1_2.zip
         ;;
