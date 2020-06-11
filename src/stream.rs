@@ -2,14 +2,16 @@ use mio::{Ready, Poll, PollOpt, Token};
 use mio::event::Evented;
 use mio::unix::EventedFd;
 use std::io;
+use std::marker::Unpin;
 #[cfg(not(windows))]
 use std::os::unix::io::RawFd;
+use std::pin::Pin;
 use super::Activated;
 use super::Packet;
 use super::Error;
 use super::State;
 use super::Capture;
-use tokio_core;
+use tokio;
 use futures;
 
 pub struct SelectableFd {
@@ -41,28 +43,28 @@ pub trait PacketCodec {
 
 pub struct PacketStream<T: State + ? Sized, C> {
     cap: Capture<T>,
-    fd: tokio_core::reactor::PollEvented<SelectableFd>,
+    fd: tokio::io::PollEvented<SelectableFd>,
     codec: C,
 }
 
 impl<T: Activated + ? Sized, C: PacketCodec> PacketStream<T, C> {
-    pub fn new(cap: Capture<T>, fd: RawFd, handle: &tokio_core::reactor::Handle, codec: C) -> Result<PacketStream<T, C>, Error> {
-        Ok(PacketStream { cap: cap, fd: tokio_core::reactor::PollEvented::new(SelectableFd { fd: fd }, handle)?, codec: codec })
+    pub fn new(cap: Capture<T>, fd: RawFd, codec: C) -> Result<PacketStream<T, C>, Error> {
+        Ok(PacketStream { cap: cap, fd: tokio::io::PollEvented::new(SelectableFd { fd: fd })?, codec: codec })
     }
 }
 
-impl<'a, T: Activated + ? Sized, C: PacketCodec> futures::Stream for PacketStream<T, C> {
-    type Item = C::Type;
-    type Error = Error;
-    fn poll(&mut self) -> futures::Poll<Option<Self::Item>, Self::Error> {
-        let p = match self.cap.next_noblock(&mut self.fd) {
+impl<'a, T: Activated + ? Sized + Unpin, C: PacketCodec + Unpin> futures::Stream for PacketStream<T, C> {
+    type Item = Result<C::Type, Error>;
+    fn poll_next(self: Pin<&mut Self>, cx: &mut core::task::Context) -> futures::task::Poll<Option<Self::Item>> {
+        let stream = Pin::into_inner(self);
+        let p = match stream.cap.next_noblock(cx, &mut stream.fd) {
             Ok(t) => t,
             Err(Error::IoError(ref e)) if *e == ::std::io::ErrorKind::WouldBlock => {
-                return Ok(futures::Async::NotReady)
+                return futures::task::Poll::Pending;
             }
-            Err(e) => return Err(e.into())
+            Err(e) => return futures::task::Poll::Ready(Some(Err(e.into()))),
         };
-        let frame = self.codec.decode(p)?;
-        Ok(futures::Async::Ready(Some(frame)))
+        let frame_result = stream.codec.decode(p);
+        futures::task::Poll::Ready(Some(frame_result))
     }
 }

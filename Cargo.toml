@@ -3,6 +3,7 @@
 name = "pcap"
 version = "0.7.0"
 authors = ["Sean Bowe <ewillbefull@gmail.com>"]
+edition = "2018"
 description = "A packet capture API around pcap/wpcap"
 keywords = ["pcap", "packet", "sniffing"]
 readme = "README.md"
@@ -16,11 +17,12 @@ build = "build.rs"
 libc = "0.2"
 clippy = { version = "0.0.*", optional = true }
 mio = { version = "0.6", optional = true }
-tokio-core = { version = "0.1", optional = true }
-futures = { version = "0.1", optional = true }
+tokio = { version = "0.2", features = ["io-driver"], optional = true }
+futures = { version = "0.3", optional = true }
 
 [dev-dependencies]
 tempdir = "0.3"
+tokio = { version = "0.2", features = ["rt-core"] }
 
 [features]
 # This feature enables access to the function Capture::savefile_append.
@@ -34,10 +36,10 @@ pcap-fopen-offline-precision = []
 
 # This feature enables access to the function Capture::stream.
 # This is disabled by default, because it depends on a tokio and mio
-tokio = ["mio", "tokio-core", "futures"]
+capture-stream = ["mio", "tokio", "futures"]
 
 # A shortcut to enable all features.
-full = ["pcap-savefile-append", "pcap-fopen-offline-precision", "tokio"]
+full = ["pcap-savefile-append", "pcap-fopen-offline-precision", "capture-stream"]
 
 [lib]
 name = "pcap"
@@ -65,4 +67,4 @@ path = "examples/getstatistics.rs"
 [[example]]
 name = "streamlisten"
 path = "examples/streamlisten.rs"
-required-features = ["tokio"]
+required-features = ["capture-stream"]
