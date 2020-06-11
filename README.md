@@ -1,4 +1,4 @@
-# pcap [![Build status](https://api.travis-ci.org/wojtek242/pcap.svg)](https://travis-ci.org/wojtek242/pcap) [![Crates.io](https://img.shields.io/crates/v/pcap.svg)](https://crates.io/crates/pcap) [![Docs.rs](https://docs.rs/pcap/badge.svg)](https://docs.rs/pcap) #
+# pcap [![Build Status](https://travis-ci.com/Wojtek242/pcap.svg?branch=master)](https://travis-ci.com/Wojtek242/pcap) [![Crates.io](https://img.shields.io/crates/v/pcap.svg)](https://crates.io/crates/pcap) [![Docs.rs](https://docs.rs/pcap/badge.svg)](https://docs.rs/pcap) #
 
 ### [Documentation](https://docs.rs/pcap)
 
