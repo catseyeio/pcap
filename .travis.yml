@@ -1,27 +1,37 @@
 language: rust
-sudo: false
+os: linux
+dist: bionic
 addons:
   apt:
     packages: [libpcap0.8, libpcap0.8-dev]
-matrix:
+jobs:
   include:
     - {os: linux, rust: stable,
        env: FLAGS="--features tokio"}
     - {os: linux, rust: beta,
        env: FLAGS="--features tokio"}
-    - {os: linux, rust: nightly,
-       env: FLAGS="--features clippy,tokio"}
+    - {os: windows, rust: stable,
+       env: FLAGS="" PCAP_LIBDIR=./WpdPack/Lib/x64}
+    - {os: windows, rust: beta,
+       env: FLAGS="" PCAP_LIBDIR=./WpdPack/Lib/x64}
     - {os: osx, rust: stable,
        env: FLAGS="--features full" PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
     - {os: osx, rust: beta,
        env: FLAGS="--features full" PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
-    - {os: osx, rust: nightly,
-       env: FLAGS="--all-features" PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
 before_install:
-  - if [ `uname` = "Darwin" ]; then
-      brew update >/dev/null;
-      brew install homebrew/dupes/libpcap;
-    fi
+- |-
+    case $TRAVIS_OS_NAME in
+      windows)
+        curl -o Win10Pcap-v10.2-5002.msi http://www.win10pcap.org/download/Win10Pcap-v10.2-5002.msi
+        msiexec.exe -i Win10Pcap-v10.2-5002.msi -qn
+        curl -o WpdPack_4_1_2.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
+        unzip WpdPack_4_1_2.zip
+        ;;
+      osx)
+        brew update >/dev/null;
+        brew install libpcap;
+        ;;
+    esac
 script:
   - cargo build -v $FLAGS 
   - cargo test  -v $FLAGS

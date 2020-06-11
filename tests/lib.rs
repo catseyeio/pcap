@@ -2,12 +2,15 @@ extern crate pcap;
 extern crate libc;
 extern crate tempdir;
 
+#[cfg(not(windows))]
 use std::io;
 use std::ops::Add;
 use std::path::Path;
 use tempdir::TempDir;
 
-use pcap::{Active, Activated, Offline, Capture, Packet, PacketHeader, Linktype, Precision, Error};
+use pcap::{Active, Activated, Offline, Capture, Packet, PacketHeader, Linktype};
+#[cfg(not(windows))]
+use pcap::{Precision, Error};
 
 #[test]
 fn read_packet_with_full_data() {
@@ -37,11 +40,11 @@ fn unify_activated() {
         loop {}
     }
 
-    fn maybe(a: bool) -> Capture<Activated> {
+    fn maybe(a: bool) -> Capture<dyn Activated> {
         if a { test1().into() } else { test2().into() }
     }
 
-    fn also_maybe(a: &mut Capture<Activated>) {
+    fn also_maybe(a: &mut Capture<dyn Activated>) {
         a.filter("whatever filter string, this won't be run anyway").unwrap();
     }
 }
@@ -60,9 +63,28 @@ impl Packets {
         }
     }
 
+    #[cfg(not(windows))]
     pub fn push(&mut self,
                 tv_sec: libc::time_t,
                 tv_usec: libc::suseconds_t,
+                caplen: u32,
+                len: u32,
+                data: &[u8]) {
+        self.headers.push(PacketHeader {
+                              ts: libc::timeval {
+                                  tv_sec: tv_sec,
+                                  tv_usec: tv_usec,
+                              },
+                              caplen: caplen,
+                              len: len,
+                          });
+        self.data.push(data.to_vec());
+    }
+
+    #[cfg(windows)]
+    pub fn push(&mut self,
+                tv_sec: i32,
+                tv_usec: i32,
                 caplen: u32,
                 len: u32,
                 data: &[u8]) {
