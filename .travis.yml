@@ -22,8 +22,8 @@ before_install:
 - |-
     case $TRAVIS_OS_NAME in
       windows)
-        choco install -y winpcap
-        cp /c/Windows/System32/wpcap.dll ./
+        curl -o Win10Pcap-v10.2-5002.msi http://www.win10pcap.org/download/Win10Pcap-v10.2-5002.msi
+        msiexec.exe -i Win10Pcap-v10.2-5002.msi -qn
         curl -o WpdPack_4_1_2.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
         unzip WpdPack_4_1_2.zip
         ;;
