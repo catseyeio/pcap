@@ -7,9 +7,9 @@ addons:
 jobs:
   include:
     - {os: linux, rust: stable,
-       env: FLAGS="--features capture-stream"}
+       env: FLAGS="--features full"}
     - {os: linux, rust: beta,
-       env: FLAGS="--features capture-stream"}
+       env: FLAGS="--features full"}
     - {os: windows, rust: stable,
        env: FLAGS="" PCAP_LIBDIR=./WpdPack/Lib/x64}
     - {os: windows, rust: beta,
