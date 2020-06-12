@@ -50,13 +50,6 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", allow(redundant_closure_call))]
 
-extern crate libc;
-#[cfg(feature = "capture-stream")]
-extern crate mio;
-#[cfg(feature = "capture-stream")]
-extern crate futures;
-#[cfg(feature = "capture-stream")]
-extern crate tokio;
 
 use unique::Unique;
 

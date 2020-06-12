@@ -1,7 +1,3 @@
-extern crate pcap;
-extern crate libc;
-extern crate tempdir;
-
 #[cfg(not(windows))]
 use std::io;
 use std::ops::Add;
