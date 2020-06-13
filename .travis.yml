@@ -4,12 +4,29 @@ dist: bionic
 addons:
   apt:
     packages: [libpcap0.8, libpcap0.8-dev]
+
+# Note that whilst PCAP_VER will compile the code paths for those versions,
+# linking is done against the library present on the system which currently
+# does not necessarily correspond to PCAP_VER. Nevertheless this at least
+# ensures those code paths compile and the pass all tests.
 jobs:
   include:
+    - {os: linux, rust: stable,
+       env: FLAGS="--features full" PCAP_VER=1.0.0}
+    - {os: linux, rust: stable,
+       env: FLAGS="--features full" PCAP_VER=1.2.1}
+    - {os: linux, rust: stable,
+       env: FLAGS="--features full" PCAP_VER=1.5.0}
     - {os: linux, rust: stable,
        env: FLAGS="--features full"}
     - {os: linux, rust: beta,
        env: FLAGS="--features full"}
+    - {os: osx, rust: stable,
+       env: FLAGS="--features full" PCAP_VER=1.0.0 PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
+    - {os: osx, rust: stable,
+       env: FLAGS="--features full" PCAP_VER=1.2.1 PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
+    - {os: osx, rust: stable,
+       env: FLAGS="--features full" PCAP_VER=1.5.0 PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
     - {os: osx, rust: stable,
        env: FLAGS="--features full" PCAP_LIBDIR=/usr/local/opt/libpcap/lib}
     - {os: osx, rust: beta,
@@ -18,6 +35,7 @@ jobs:
        env: FLAGS="" PCAP_LIBDIR=./WpdPack/Lib/x64}
     - {os: windows, rust: beta,
        env: FLAGS="" PCAP_LIBDIR=./WpdPack/Lib/x64}
+
 before_install:
 - |-
     case $TRAVIS_OS_NAME in
@@ -32,6 +50,7 @@ before_install:
         brew install libpcap;
         ;;
     esac
+
 script:
   - cargo build -v $FLAGS 
   - cargo test  -v $FLAGS

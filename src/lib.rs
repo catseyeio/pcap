@@ -80,6 +80,7 @@ pub enum Error {
     MalformedError(std::str::Utf8Error),
     InvalidString,
     PcapError(String),
+    IoctlError(std::io::ErrorKind),
     InvalidLinktype,
     TimeoutExpired,
     NoMorePackets,
@@ -106,6 +107,7 @@ impl fmt::Display for Error {
             MalformedError(ref e) => write!(f, "libpcap returned invalid UTF-8: {}", e),
             InvalidString => write!(f, "libpcap returned a null string"),
             PcapError(ref e) => write!(f, "libpcap error: {}", e),
+            IoctlError(ref e) => write!(f, "ioctl error: {:?}", e),
             InvalidLinktype => write!(f, "invalid or unknown linktype"),
             TimeoutExpired => write!(f, "timeout expired while reading from a live capture"),
             NonNonBlock => write!(f, "must be in non-blocking mode to function"),
@@ -124,6 +126,7 @@ impl std::error::Error for Error {
         match *self {
             MalformedError(..) => "libpcap returned invalid UTF-8",
             PcapError(..) => "libpcap FFI error",
+            IoctlError(..) => "ioctl FFI error",
             InvalidString => "libpcap returned a null string",
             InvalidLinktype => "invalid or unknown linktype",
             TimeoutExpired => "timeout expired while reading from a live capture",
@@ -431,6 +434,19 @@ impl<T: State + ? Sized> Capture<T> {
         })
     }
 
+    /// Set the minumum amount of data received by the kernel in a single call.
+    ///
+    /// Note that this value is set to 0 when the capture is set to immediate
+    /// mode. You should not call `min_to_copy` on captures opened in immediate
+    /// mode if you want them to stay in immediate mode.
+    #[cfg(target_os = "windows")]
+    pub fn min_to_copy(self, to: i32) -> Capture<T> {
+        unsafe {
+            raw::pcap_setmintocopy(*self.handle, to);
+            self
+        }
+    }
+
     #[inline]
     fn check_err(&self, success: bool) -> Result<(), Error> {
         if success {
@@ -514,6 +530,48 @@ impl Capture<Inactive> {
             self.check_err(raw::pcap_activate(*self.handle) == 0)?;
             Ok(mem::transmute(self))
         }
+    }
+
+    /// Activates an inactive capture created from `Capture::from_device()` in
+    /// immediate mode or returns an error. In immediate mode, packets are
+    /// always delivered as soon as they arrive, with no buffering.
+    ///
+    /// On Linux for libpcap versions < 1.5.0 captures are always in immediate
+    /// mode and this function has the same effect as `open`.
+    ///
+    /// On Windows (WinPcap) immediate mode changes the value `min_to_copy`
+    /// value to 0. You should not call `min_to_copy` on captures opened in
+    /// immediate mode if you want them to stay in immediate mode.
+    pub fn open_in_immediate_mode(self) -> Result<Capture<Active>, Error> {
+        // From version 1.5.0 libpcap handles platform specifics through the
+        // library call. Prior to that version, different platforms need to be
+        // handled differently. Note that WinPcap is based on 1.0.0.
+
+        #[cfg(pcap_1_5_0)]
+        unsafe { raw::pcap_set_immediate_mode(*self.handle, true as _) };
+
+        // Pre-1.5.0 Linux captures are always in immediate mode.
+
+        // Pre-1.5.0 Windows just sets mintocopy to 0 for immediate mode.
+        #[cfg(all(windows, not(pcap_1_5_0)))]
+        unsafe { raw::pcap_setmintocopy(*self.handle, 0) };
+
+        let active = self.open()?;
+
+        // Pre-1.5.0 BSD/MacOS require an ioctl call to be made on an _active_
+        // capture to set immediate mode.
+        #[cfg(all(unix, not(target_os = "linux"), not(pcap_1_5_0)))]
+        check_ioctl_err(
+            unsafe {
+                libc::ioctl(
+                    raw::pcap_fileno(*active.handle),
+                    libc::BIOCIMMEDIATE,
+                    &(true as libc::c_uint),
+                )
+            } >= 0
+        )?;
+
+        Ok(active)
     }
 
     /// Set the read timeout for the Capture. By default, this is 0, so it will block
@@ -833,4 +891,14 @@ fn with_errbuf<T, F>(func: F) -> Result<T, Error>
 fn test_struct_size() {
     use std::mem::size_of;
     assert_eq!(size_of::<PacketHeader>(), size_of::<raw::pcap_pkthdr>());
+}
+
+#[inline]
+#[allow(dead_code)]
+fn check_ioctl_err(success: bool) -> Result<(), Error> {
+    if success {
+        Ok(())
+    } else {
+        Err(Error::IoctlError(std::io::Error::last_os_error().kind()))
+    }
 }
