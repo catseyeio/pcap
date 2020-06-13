@@ -24,8 +24,7 @@ See examples for usage.
 
 Install [WinPcap](http://www.winpcap.org/install/default.htm).
 
-Place wpcap.dll in your `C:\Rust\bin\rustlib\x86_64-pc-windows-gnu\lib\` directory on 64 bit
-or `C:\Rust\bin\rustlib\i686-pc-windows-gnu\lib\` on 32 bit.
+Download the WinPcap [Developer's Pack](https://www.winpcap.org/devel.htm). Add the `/Lib` or `/Lib/x64` folder to your `LIB` environment variable.
 
 ## Linux
 
@@ -41,38 +40,19 @@ libpcap should be installed on Mac OS X by default.
 
 If `PCAP_LIBDIR` environment variable is set when building the crate, it will be added to the linker search path - this allows linking against a specific `libpcap`.
 
+## Library Version
+
+The crate will automatically try to detect the installed `libpcap`/`wpcap` version by loading it during the build and calling `pcap_lib_version`. If for some reason this is not suitable, you can specify the desired library version by setting the environment variable `PCAP_VER` to the desired version. The version number is used to determine which library calls to include in the compilation.
+
 ## Optional Features
 
-#### `tokio`
+#### `capture-stream`
 
-Use the `tokio` feature to enable support for streamed packet captures.
-
-```toml
-[dependencies]
-pcap = { version = "0.7", features = ["tokio"] }
-```
-
-#### `pcap-savefile-append`
-
-To get access to the `Capture::savefile_append` function (which allows appending
-to an existing pcap file) you have to depend on the `pcap-savefile-append`
-feature flag. It requires at least libpcap version 1.7.2.
+Use the `capture-stream` feature to enable support for streamed packet captures.
 
 ```toml
 [dependencies]
-pcap = { version = "0.7", features = ["pcap-savefile-append"] }
-```
-
-#### `pcap-fopen-offline-precision`
-
-To enable `Capture::from_raw_fd_with_precision` constructor (which allows opening
-an offline capture from a raw file descriptor with a predefined timestamp precision)
-you have to add `pcap-fopen-offline-precision` feature flag. This requires libpcap
-version 1.5.0 or later.
-
-```toml
-[dependencies]
-pcap = { version = "0.7", features = ["pcap-fopen-offline-precision"] }
+pcap = { version = "0.7", features = ["capture-stream"] }
 ```
 
 ## License
