@@ -20,11 +20,7 @@ fn new_stream() -> Result<PacketStream<Active, SimpleDumpCodec>, Error> {
 }
 
 fn main() {
-    let mut rt = tokio::runtime::Builder::new()
-        .enable_io()
-        .basic_scheduler()
-        .build()
-        .unwrap();
+    let mut rt = tokio::runtime::Runtime::new().unwrap();
 
     let stream = rt.enter(|| match new_stream() {
         Ok(stream) => stream,
